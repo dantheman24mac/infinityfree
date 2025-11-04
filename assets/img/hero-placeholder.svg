@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320" viewBox="0 0 480 320" preserveAspectRatio="xMidYMid slice">
+    <defs>
+        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#6bbf59;stop-opacity:1"/>
+            <stop offset="100%" style="stop-color:#1b5e20;stop-opacity:1"/>
+        </linearGradient>
+    </defs>
+    <rect width="480" height="320" fill="url(#grad)"/>
+    <g fill="#ffffff" opacity="0.85">
+        <circle cx="120" cy="160" r="56"/>
+        <circle cx="220" cy="150" r="72"/>
+        <circle cx="320" cy="170" r="48"/>
+        <path d="M80 240 C130 200 180 220 220 200 C260 180 300 190 360 220 L360 240 L80 240 Z" fill="#ffffff" opacity="0.55"/>
+    </g>
+    <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#f1f8e9">
+        DragonStone Preview
+    </text>
+</svg>
+

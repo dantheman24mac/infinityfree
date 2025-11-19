@@ -2,6 +2,7 @@
 /** @var array<int,array<string,mixed>> $items */
 /** @var float $cartTotal */
 /** @var int $totalPoints */
+/** @var float $cartCarbonTotal */
 ?>
 <section class="mb-5">
     <h2 class="h3 mb-3">Checkout</h2>
@@ -64,6 +65,15 @@
                                     </select>
                                 </div>
                             </div>
+                            <hr class="my-4">
+                            <h3 class="h5 mb-3">EcoRewards</h3>
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label" for="redeem_points">Redeem EcoPoints</label>
+                                    <input type="number" min="0" step="1" class="form-control" id="redeem_points" name="redeem_points" value="0" placeholder="Enter points to redeem">
+                                    <small class="text-muted">10 points ≈ 1 <?= htmlspecialchars(\DragonStone\Services\CurrencyService::baseCurrency()) ?> credit. We will cap at your available balance.</small>
+                                </div>
+                            </div>
                             <div class="mt-4 d-flex justify-content-between align-items-center">
                                 <div class="text-muted small">By placing the order you acknowledge delivery within 3–5 business days.</div>
                                 <button type="submit" class="btn btn-success">Place order</button>
@@ -82,22 +92,32 @@
                             <?php foreach ($items as $item): ?>
                                 <li class="list-group-item d-flex justify-content-between align-items-start">
                                     <div>
-                                        <div class="fw-semibold"><?= htmlspecialchars($item['product']['name']) ?></div>
-                                        <small class="text-muted">Qty <?= (int)$item['quantity'] ?> × <?= htmlspecialchars(format_currency((float)$item['unit_price'])) ?></small>
-                                    </div>
-                                    <span><?= htmlspecialchars(format_currency((float)$item['subtotal'])) ?></span>
+                                         <div class="fw-semibold"><?= htmlspecialchars($item['product']['name']) ?></div>
+                                         <small class="text-muted">Qty <?= (int)$item['quantity'] ?> × <?= htmlspecialchars(format_price((float)$item['unit_price'])) ?></small>
+                                     </div>
+                                     <span><?= htmlspecialchars(format_price((float)$item['subtotal'])) ?></span>
+
                                 </li>
                             <?php endforeach; ?>
                         </ul>
                         <dl class="row mb-0">
-                            <dt class="col-6">Total</dt>
-                            <dd class="col-6 text-end fw-semibold"><?= htmlspecialchars(format_currency($cartTotal)) ?></dd>
+                             <dt class="col-6">Total (<?= htmlspecialchars(active_currency()) ?>)</dt>
+                             <dd class="col-6 text-end fw-semibold">
+                                 <?= htmlspecialchars(format_price($cartTotal)) ?>
+                                 <small class="text-muted d-block">Base: <?= htmlspecialchars(format_currency($cartTotal)) ?></small>
+                             </dd>
+
                             <dt class="col-6">EcoPoints to earn</dt>
                             <dd class="col-6 text-end fw-semibold"><?= (int)$totalPoints ?> pts</dd>
                         </dl>
                     </div>
+                    <?php
+                    $treeDays = \DragonStone\Services\CarbonCalculator::treeOffsetDays($cartCarbonTotal ?? 0.0);
+                    $commuteKm = \DragonStone\Services\CarbonCalculator::commuteKilometers($cartCarbonTotal ?? 0.0);
+                    ?>
                     <div class="card-footer text-muted small">
-                        Carbon savings data will appear in the Impact Dashboard after launch.
+                        Estimated footprint: <strong><?= htmlspecialchars(format_carbon($cartCarbonTotal ?? 0.0)) ?></strong> ·
+                        Offsets <?= number_format($treeDays, 1) ?> tree-days · Equal to <?= number_format($commuteKm, 1) ?> km commute.
                     </div>
                 </div>
             </div>

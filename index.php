@@ -8,6 +8,9 @@ use DragonStone\Services\CartService;
 use DragonStone\Repositories\CustomerRepository;
 use DragonStone\Repositories\OrderRepository;
 use DragonStone\Repositories\SubscriptionRepository;
+use DragonStone\Services\CurrencyService;
+use DragonStone\Services\RewardService;
+use DragonStone\Services\SubscriptionService;
 
 $basePath = realpath(__DIR__ . '/..');
 if ($basePath === false || !file_exists($basePath . '/vendor/autoload.php')) {
@@ -63,6 +66,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== null) {
             header('Location: ' . $redirectUrl);
             exit;
 
+        case 'set_currency':
+            $requestedCurrency = $_POST['currency_code'] ?? CurrencyService::baseCurrency();
+            CurrencyService::setActiveCurrency($requestedCurrency);
+            $_SESSION['flash'] = ['type' => 'info', 'message' => 'Currency preference updated.'];
+            header('Location: ' . $redirectUrl);
+            exit;
+
+        case 'subscription_create':
+            $required = ['first_name', 'last_name', 'email', 'subscription_name'];
+            foreach ($required as $field) {
+                if (empty($_POST[$field])) {
+                    $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Please complete all required subscription fields.'];
+                    header('Location: ' . ($_ENV['APP_URL'] ?? '/') . '?page=subscriptions');
+                    exit;
+                }
+            }
+
+            $customerPayload = [
+                'first_name' => trim((string)$_POST['first_name']),
+                'last_name' => trim((string)$_POST['last_name']),
+                'email' => strtolower(trim((string)$_POST['email'])),
+                'phone' => trim((string)($_POST['phone'] ?? '')),
+                'city' => trim((string)($_POST['city'] ?? '')),
+                'country' => trim((string)($_POST['country'] ?? '')),
+            ];
+
+            try {
+                $subscriptionResult = SubscriptionService::create($pdo, [
+                    'customer' => $customerPayload,
+                    'name' => trim((string)$_POST['subscription_name']),
+                    'product_id' => (int)($_POST['product_id'] ?? 0),
+                    'quantity' => (int)($_POST['quantity'] ?? 1),
+                    'interval_unit' => $_POST['interval_unit'] ?? 'monthly',
+                    'currency_code' => CurrencyService::getActiveCurrency(),
+                    'reward_points' => (int)($_POST['subscription_reward_points'] ?? 0),
+                ]);
+                $_SESSION['customer_id'] = (int)($subscriptionResult['customer']['id'] ?? 0);
+                $_SESSION['flash'] = ['type' => 'success', 'message' => 'Subscription scheduled successfully.'];
+            } catch (\Throwable $exception) {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Unable to create subscription: ' . $exception->getMessage()];
+            }
+            header('Location: ' . ($_ENV['APP_URL'] ?? '/') . '?page=subscriptions');
+            exit;
+
         case 'checkout_submit':
             $items = CartService::detailedItems($pdo);
             if (empty($items)) {
@@ -90,9 +137,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== null) {
             ];
 
             $customer = CustomerRepository::findOrCreate($pdo, $customerData);
+            $_SESSION['customer_id'] = (int)$customer['id'];
+
+            $cartSubtotal = CartService::total($pdo);
+            $currencyCode = CurrencyService::getActiveCurrency();
+            $currencyRate = CurrencyService::rate($currencyCode);
+            $requestedRedeemPoints = (int)($_POST['redeem_points'] ?? 0);
+            $availablePoints = (int)($customer['eco_points'] ?? 0);
+            $redeemPoints = RewardService::clampRedeemablePoints($requestedRedeemPoints, $availablePoints, $cartSubtotal);
+            $discountAmount = RewardService::currencyValue($redeemPoints);
+            $grandTotal = max($cartSubtotal - $discountAmount, 0);
+
             $checkoutData = [
                 'payment_method' => $_POST['payment_method'] ?? 'card',
                 'shipping_provider' => $_POST['shipping_provider'] ?? 'DragonStone Green Logistics',
+                'currency_code' => $currencyCode,
+                'currency_rate' => $currencyRate,
+                'redeemed_points' => $redeemPoints,
+                'totals' => [
+                    'subtotal' => $cartSubtotal,
+                    'discount' => $discountAmount,
+                    'grand_total' => $grandTotal,
+                    'display_total' => CurrencyService::convertFromBase($grandTotal, $currencyCode),
+                ],
             ];
 
             try {
@@ -119,11 +186,13 @@ switch ($page) {
     case 'cart':
         $cartItems = CartService::detailedItems($pdo);
         $cartTotal = CartService::total($pdo);
+        $cartCarbon = CartService::carbonTotal($pdo);
 
         render('cart', [
             'title' => 'Your Cart',
             'items' => $cartItems,
             'cartTotal' => $cartTotal,
+            'cartCarbonTotal' => $cartCarbon,
         ]);
         break;
 
@@ -137,12 +206,14 @@ switch ($page) {
 
         $cartTotal = CartService::total($pdo);
         $totalPoints = CartService::pointsTotal($pdo);
+        $cartCarbon = CartService::carbonTotal($pdo);
 
         render('checkout', [
             'title' => 'Checkout',
             'items' => $cartItems,
             'cartTotal' => $cartTotal,
             'totalPoints' => $totalPoints,
+            'cartCarbonTotal' => $cartCarbon,
         ]);
         break;
 
@@ -196,13 +267,18 @@ switch ($page) {
         break;
 
     case 'subscriptions':
-        $subscriptions = SubscriptionRepository::allWithItems($pdo);
+        $currentCustomerId = isset($_SESSION['customer_id']) ? (int)$_SESSION['customer_id'] : null;
+        $subscriptions = $currentCustomerId !== null ? SubscriptionRepository::allWithItems($pdo, $currentCustomerId) : [];
         $eligibleProducts = ProductRepository::subscriptionEligible($pdo);
+
+        $selectedProduct = isset($_GET['product']) ? (int)$_GET['product'] : 0;
 
         render('subscriptions', [
             'title' => 'Subscription Hub',
             'subscriptions' => $subscriptions,
             'eligibleProducts' => $eligibleProducts,
+            'selectedProductId' => $selectedProduct,
+            'hasCustomerContext' => $currentCustomerId !== null,
         ]);
         break;
 

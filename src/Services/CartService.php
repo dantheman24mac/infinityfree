@@ -100,6 +100,8 @@ class CartService
             $subtotal = $quantity * $price;
             $estimatedPoints = $quantity * (int)$product['sustainability_score'];
 
+            $perUnitCarbon = isset($product['carbon_footprint_kg']) ? (float)$product['carbon_footprint_kg'] : 0.0;
+
             $items[] = [
                 'product_id' => $productId,
                 'product' => $product,
@@ -107,6 +109,8 @@ class CartService
                 'unit_price' => $price,
                 'subtotal' => $subtotal,
                 'estimated_points' => $estimatedPoints,
+                'carbon_per_unit' => $perUnitCarbon,
+                'carbon_kg' => $perUnitCarbon * $quantity,
             ];
         }
 
@@ -141,5 +145,13 @@ class CartService
         return array_reduce($items, static function (int $carry, array $item): int {
             return $carry + (int)$item['estimated_points'];
         }, 0);
+    }
+
+    public static function carbonTotal(PDO $pdo): float
+    {
+        $items = self::detailedItems($pdo);
+        return array_reduce($items, static function (float $carry, array $item): float {
+            return $carry + (float)($item['carbon_kg'] ?? 0.0);
+        }, 0.0);
     }
 }

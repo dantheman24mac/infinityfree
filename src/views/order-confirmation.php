@@ -25,18 +25,40 @@
                                             <?= htmlspecialchars($item['name']) ?>
                                             <small class="text-muted">&times; <?= (int)$item['quantity'] ?></small>
                                         </span>
-                                        <span><?= htmlspecialchars(format_currency((float)$item['unit_price'])) ?></span>
+                                        <span>
+                                            <?= htmlspecialchars(format_currency((float)($item['unit_price_display'] ?? $item['unit_price']), $order['currency_code'] ?? active_currency())) ?>
+                                            <small class="text-muted d-block">Base: <?= htmlspecialchars(format_currency((float)$item['unit_price'])) ?></small>
+                                        </span>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
+                            <?php
+                            $carbon = \DragonStone\Services\CarbonCalculator::forItems($order['items'] ?? []);
+                            $treeDays = \DragonStone\Services\CarbonCalculator::treeOffsetDays($carbon);
+                            $commuteKm = \DragonStone\Services\CarbonCalculator::commuteKilometers($carbon);
+                            ?>
                             <dl class="row">
-                                <dt class="col-6">Total paid</dt>
+                                <dt class="col-6">Subtotal (base)</dt>
+                                <dd class="col-6 text-end"><?= htmlspecialchars(format_currency((float)($order['subtotal'] ?? $order['total']))) ?></dd>
+                                <dt class="col-6">Discounts</dt>
+                                <dd class="col-6 text-end text-success">−<?= htmlspecialchars(format_currency((float)($order['discount_total'] ?? 0.0))) ?></dd>
+                                <dt class="col-6">Total (<?= htmlspecialchars($order['currency_code'] ?? active_currency()) ?>)</dt>
                                 <dd class="col-6 text-end">
-                                    <?= htmlspecialchars(format_currency((float)$order['total'])) ?>
+                                    <?= htmlspecialchars(format_currency((float)($order['total_converted'] ?? $order['total']), $order['currency_code'] ?? active_currency())) ?>
+                                    <small class="text-muted d-block">Base: <?= htmlspecialchars(format_currency((float)$order['total'])) ?></small>
                                 </dd>
+                                <?php if (!empty($order['eco_points_redeemed'])): ?>
+                                    <dt class="col-6">EcoPoints redeemed</dt>
+                                    <dd class="col-6 text-end text-success">−<?= (int)$order['eco_points_redeemed'] ?> pts</dd>
+                                <?php endif; ?>
                                 <dt class="col-6">EcoPoints awarded</dt>
                                 <dd class="col-6 text-end">
                                     <?= (int)$order['eco_points_awarded'] ?> pts
+                                </dd>
+                                <dt class="col-6">Order footprint</dt>
+                                <dd class="col-6 text-end">
+                                    <?= htmlspecialchars(format_carbon($carbon)) ?>
+                                    <small class="text-muted d-block">≈ <?= number_format($treeDays, 1) ?> tree-days · <?= number_format($commuteKm, 1) ?> km</small>
                                 </dd>
                             </dl>
                         </div>

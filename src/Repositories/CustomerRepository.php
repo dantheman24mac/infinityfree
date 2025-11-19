@@ -102,4 +102,17 @@ class CustomerRepository
             ':id' => $customerId,
         ]);
     }
+
+    public static function deductEcoPoints(PDO $pdo, int $customerId, int $points): void
+    {
+        if ($points <= 0) {
+            return;
+        }
+
+        $stmt = $pdo->prepare('UPDATE customers SET eco_points = GREATEST(eco_points - :points, 0) WHERE id = :id');
+        $stmt->execute([
+            ':points' => $points,
+            ':id' => $customerId,
+        ]);
+    }
 }

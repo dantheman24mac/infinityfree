@@ -1,6 +1,7 @@
 <?php
 /** @var array<int,array<string,mixed>> $items */
 /** @var float $cartTotal */
+/** @var float $cartCarbonTotal */
 ?>
 <section class="mb-5">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
@@ -31,6 +32,7 @@
                         <th scope="col" class="text-center">Quantity</th>
                         <th scope="col" class="text-end">Unit Price</th>
                         <th scope="col" class="text-end">Subtotal</th>
+                        <th scope="col" class="text-end">Carbon</th>
                         <th scope="col" class="text-end">EcoPoints</th>
                         <th scope="col"></th>
                     </tr>
@@ -46,8 +48,11 @@
                                 <input type="number" class="form-control" min="1" name="items[<?= (int)$item['product_id'] ?>]"
                                        value="<?= (int)$item['quantity'] ?>" form="cartUpdateForm">
                             </td>
-                            <td class="text-end"><?= htmlspecialchars(format_currency((float)$item['unit_price'])) ?></td>
-                            <td class="text-end"><?= htmlspecialchars(format_currency((float)$item['subtotal'])) ?></td>
+                            <td class="text-end"><?= htmlspecialchars(format_price((float)$item['unit_price'])) ?></td>
+                            <td class="text-end"><?= htmlspecialchars(format_price((float)$item['subtotal'])) ?></td>
+                            <td class="text-end">
+                                <?= htmlspecialchars(format_carbon((float)($item['carbon_kg'] ?? 0))) ?>
+                            </td>
                             <td class="text-end"><?= (int)$item['estimated_points'] ?></td>
                             <td class="text-end">
                                 <form method="post" action="<?= htmlspecialchars(rtrim($baseUrl, '/')) ?>/">
@@ -65,7 +70,10 @@
             <div class="card-footer d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                 <div class="text-muted">Estimated EcoPoints: <strong><?= array_sum(array_column($items, 'estimated_points')) ?></strong></div>
                 <div class="d-flex align-items-center gap-3 mt-3 mt-md-0">
-                    <div class="fs-5 fw-semibold">Total: <?= htmlspecialchars(format_currency($cartTotal)) ?></div>
+                    <div class="fs-5 fw-semibold">
+                        Total: <?= htmlspecialchars(format_price($cartTotal)) ?>
+                        <small class="text-muted d-block">Base: <?= htmlspecialchars(format_currency($cartTotal)) ?></small>
+                    </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-secondary" type="submit" form="cartUpdateForm" name="action" value="cart_update">
                             Update quantities
@@ -75,6 +83,28 @@
                 </div>
             </div>
         </div>
+
+        <?php
+        $treeDays = \DragonStone\Services\CarbonCalculator::treeOffsetDays($cartCarbonTotal ?? 0.0);
+        $commuteKm = \DragonStone\Services\CarbonCalculator::commuteKilometers($cartCarbonTotal ?? 0.0);
+        ?>
+        <div class="reward-banner mt-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                <div>
+                    <div class="stat-label">Estimated carbon footprint</div>
+                    <div class="stat-value"><?= htmlspecialchars(format_carbon($cartCarbonTotal ?? 0.0)) ?></div>
+                </div>
+                <div>
+                    <div class="stat-label">Equal to absorbing</div>
+                    <div class="stat-value"><?= number_format($treeDays, 1) ?> tree-days</div>
+                </div>
+                <div>
+                    <div class="stat-label">Comparable commute</div>
+                    <div class="stat-value"><?= number_format($commuteKm, 1) ?> km</div>
+                </div>
+            </div>
+        </div>
+
         <form id="cartUpdateForm" method="post" action="<?= htmlspecialchars(rtrim($baseUrl, '/')) ?>/" class="d-none">
             <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '?page=cart') ?>">
         </form>

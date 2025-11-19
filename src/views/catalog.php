@@ -37,7 +37,10 @@
                             <h4 class="card-title h5"><?= htmlspecialchars($product['name']) ?></h4>
                             <p class="text-muted flex-grow-1"><?= htmlspecialchars($product['summary']) ?></p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-semibold"><?= htmlspecialchars(format_currency((float)$product['price'], 'USD')) ?></span>
+                                <div class="text-end">
+                                    <span class="fw-semibold d-block"><?= htmlspecialchars(format_price((float)$product['price'])) ?></span>
+                                    <small class="text-muted">Base: <?= htmlspecialchars(format_currency((float)$product['price'])) ?></small>
+                                </div>
                                 <a class="btn btn-outline-success btn-sm" href="?page=product&amp;id=<?= (int)$product['id'] ?>">View</a>
                             </div>
                         </div>

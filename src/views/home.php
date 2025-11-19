@@ -48,7 +48,10 @@
                         </span>
                         <h4 class="card-title h5"><?= htmlspecialchars($product['name']) ?></h4>
                         <p class="card-text text-muted"><?= htmlspecialchars($product['summary']) ?></p>
-                        <p class="fw-semibold mb-2"><?= htmlspecialchars(format_currency((float)$product['price'], 'USD')) ?></p>
+                        <p class="fw-semibold mb-2">
+                            <?= htmlspecialchars(format_price((float)$product['price'])) ?>
+                            <small class="text-muted d-block">Base: <?= htmlspecialchars(format_currency((float)$product['price'])) ?></small>
+                        </p>
                         <a class="btn btn-outline-success btn-sm" href="?page=product&amp;id=<?= (int)$product['id'] ?>">View details</a>
                     </div>
                 </div>

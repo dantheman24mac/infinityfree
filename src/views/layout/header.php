@@ -7,6 +7,15 @@ $rootUrl = rtrim($baseUrl, '/');
 <!DOCTYPE html>
 <html lang="en">
 <head>
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-5ZFN3DQ2LC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-5ZFN3DQ2LC');
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="DragonStone – Sustainable living made accessible.">
@@ -20,20 +29,35 @@ $rootUrl = rtrim($baseUrl, '/');
         <a class="text-white text-decoration-none" href="<?= htmlspecialchars($rootUrl) ?>/">
             <h1 class="h3 m-0"><?= htmlspecialchars($appName) ?></h1>
         </a>
-        <nav class="mt-3 mt-md-0">
-            <a class="nav-link d-inline-block text-white-50" href="?page=catalog">Shop</a>
-            <a class="nav-link d-inline-block text-white-50" href="?page=subscriptions">Subscriptions</a>
-            <a class="nav-link d-inline-block text-white-50" href="?page=community">Community</a>
-            <a class="nav-link d-inline-block text-white-50" href="?page=impact">Impact</a>
-            <a class="nav-link d-inline-block text-white-50 position-relative" href="?page=cart">
-                Cart
-                <?php if (!empty($cartCount)): ?>
-                    <span class="badge bg-success position-absolute top-0 start-100 translate-middle rounded-pill">
-                        <?= (int)$cartCount ?>
-                    </span>
-                <?php endif; ?>
-            </a>
-            <a class="btn btn-outline-light btn-sm ms-md-3" href="<?= htmlspecialchars($rootUrl) ?>/admin/login.php">Admin Portal</a>
+        <nav class="mt-3 mt-md-0 d-flex align-items-center gap-3">
+            <div>
+                <a class="nav-link d-inline-block text-white-50" href="?page=catalog">Shop</a>
+                <a class="nav-link d-inline-block text-white-50" href="?page=subscriptions">Subscriptions</a>
+                <a class="nav-link d-inline-block text-white-50" href="?page=community">Community</a>
+                <a class="nav-link d-inline-block text-white-50" href="?page=impact">Impact</a>
+                <a class="nav-link d-inline-block text-white-50 position-relative" href="?page=cart">
+                    Cart
+                    <?php if (!empty($cartCount)): ?>
+                        <span class="badge bg-success position-absolute top-0 start-100 translate-middle rounded-pill">
+                            <?= (int)$cartCount ?>
+                        </span>
+                    <?php endif; ?>
+                </a>
+                <a class="btn btn-outline-light btn-sm ms-md-3" href="<?= htmlspecialchars($rootUrl) ?>/admin/login.php">Admin Portal</a>
+            </div>
+            <?php if (!empty($currencyOptions)): ?>
+                <form method="post" action="<?= htmlspecialchars($rootUrl) ?>/" class="d-flex align-items-center currency-select">
+                    <input type="hidden" name="action" value="set_currency">
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/') ?>">
+                    <select class="form-select form-select-sm bg-dark text-white border-light" name="currency_code" data-currency-switcher>
+                        <?php foreach ($currencyOptions as $code => $currencyMeta): ?>
+                            <option value="<?= htmlspecialchars($code) ?>" <?= $activeCurrency === $code ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($code . ' – ' . $currencyMeta['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
+            <?php endif; ?>
         </nav>
     </div>
 </header>

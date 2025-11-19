@@ -11,21 +11,30 @@ class SubscriptionRepository
     /**
      * @return array<int,array<string,mixed>>
      */
-    public static function allWithItems(PDO $pdo): array
+    public static function allWithItems(PDO $pdo, ?int $customerId = null): array
     {
-        $stmt = $pdo->query(
+        if ($customerId === null) {
+            return [];
+        }
+
+        $stmt = $pdo->prepare(
             'SELECT s.id,
                     s.name,
                     s.interval_unit,
                     s.next_renewal,
                     s.status,
+                    s.currency_code,
+                    s.reward_points,
                     c.first_name,
                     c.last_name,
                     c.email
              FROM subscriptions s
              INNER JOIN customers c ON s.customer_id = c.id
+             WHERE s.customer_id = :customer_id
              ORDER BY s.next_renewal'
         );
+        $stmt->bindValue(':customer_id', $customerId, PDO::PARAM_INT);
+        $stmt->execute();
 
         $subscriptions = $stmt->fetchAll() ?: [];
         if (empty($subscriptions)) {
@@ -37,6 +46,7 @@ class SubscriptionRepository
         $itemStmt = $pdo->prepare(
             "SELECT si.subscription_id,
                     si.quantity,
+                    si.unit_price_snapshot,
                     p.name,
                     p.price,
                     p.sustainability_score

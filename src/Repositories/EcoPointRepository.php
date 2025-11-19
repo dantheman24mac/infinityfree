@@ -19,7 +19,7 @@ class EcoPointRepository
         return $rule ?: null;
     }
 
-    public static function recordOrderAward(PDO $pdo, int $customerId, int $orderId, string $orderReference, int $points): void
+    public static function recordOrderAward(PDO $pdo, int $customerId, int $orderId, string $orderReference, int $points, string $sourceType = 'order'): void
     {
         if ($points <= 0) {
             return;
@@ -35,7 +35,7 @@ class EcoPointRepository
         $stmt->execute([
             ':customer_id' => $customerId,
             ':rule_id' => $ruleId,
-            ':source_type' => 'order',
+            ':source_type' => $sourceType,
             ':source_reference' => $orderReference,
             ':points' => $points,
         ]);
@@ -53,6 +53,24 @@ class EcoPointRepository
             ':reference' => $note,
             ':points' => $points,
             ':admin_id' => $adminId,
+        ]);
+    }
+
+    public static function recordRedemption(PDO $pdo, int $customerId, string $orderReference, int $points): void
+    {
+        if ($points <= 0) {
+            return;
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO ecopoint_transactions (customer_id, rule_id, source_type, source_reference, points)
+             VALUES (:customer_id, NULL, :source_type, :source_reference, :points)'
+        );
+        $stmt->execute([
+            ':customer_id' => $customerId,
+            ':source_type' => 'redemption',
+            ':source_reference' => $orderReference,
+            ':points' => $points * -1,
         ]);
     }
 }

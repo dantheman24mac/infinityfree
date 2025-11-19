@@ -45,6 +45,7 @@ CREATE TABLE products (
     price DECIMAL(10,2) NOT NULL,
     subscription_eligible TINYINT(1) DEFAULT 0,
     sustainability_score TINYINT UNSIGNED DEFAULT 0,
+    carbon_footprint_kg DECIMAL(8,2) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(id)
@@ -107,9 +108,15 @@ CREATE TABLE orders (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     customer_id INT UNSIGNED NOT NULL,
     order_reference VARCHAR(40) NOT NULL UNIQUE,
+    subtotal DECIMAL(10,2) NOT NULL,
+    discount_total DECIMAL(10,2) NOT NULL DEFAULT 0,
     total DECIMAL(10,2) NOT NULL,
-    status ENUM('pending','paid','shipped','completed','cancelled') DEFAULT 'pending',
+    total_converted DECIMAL(10,2) NOT NULL DEFAULT 0,
+    currency_code CHAR(3) NOT NULL DEFAULT 'USD',
+    currency_rate DECIMAL(10,6) NOT NULL DEFAULT 1.000000,
     eco_points_awarded INT DEFAULT 0,
+    eco_points_redeemed INT DEFAULT 0,
+    status ENUM('pending','paid','shipped','completed','cancelled') DEFAULT 'pending',
     placed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id)
         ON DELETE CASCADE ON UPDATE CASCADE
@@ -121,6 +128,8 @@ CREATE TABLE order_items (
     product_id INT UNSIGNED NOT NULL,
     quantity INT NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
+    unit_price_display DECIMAL(10,2) NOT NULL DEFAULT 0,
+    currency_code CHAR(3) NOT NULL DEFAULT 'USD',
     eco_points INT DEFAULT 0,
     FOREIGN KEY (order_id) REFERENCES orders(id)
         ON DELETE CASCADE ON UPDATE CASCADE,
@@ -144,6 +153,8 @@ CREATE TABLE payments (
     order_id INT UNSIGNED NOT NULL,
     method ENUM('card','paypal','bank_transfer','manual') NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
+    amount_converted DECIMAL(10,2) NOT NULL DEFAULT 0,
+    currency_code CHAR(3) NOT NULL DEFAULT 'USD',
     status ENUM('pending','authorized','captured','failed','refunded') DEFAULT 'pending',
     processed_at DATETIME NULL,
     FOREIGN KEY (order_id) REFERENCES orders(id)
@@ -156,7 +167,11 @@ CREATE TABLE subscriptions (
     name VARCHAR(120) NOT NULL,
     interval_unit ENUM('weekly','monthly','quarterly') NOT NULL,
     next_renewal DATE NOT NULL,
+    last_processed DATE NULL,
+    currency_code CHAR(3) NOT NULL DEFAULT 'USD',
     status ENUM('active','paused','cancelled') DEFAULT 'active',
+    auto_renew TINYINT(1) DEFAULT 1,
+    reward_points INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id)
@@ -168,6 +183,7 @@ CREATE TABLE subscriptions_items (
     subscription_id INT UNSIGNED NOT NULL,
     product_id INT UNSIGNED NOT NULL,
     quantity INT NOT NULL,
+    unit_price_snapshot DECIMAL(10,2) NOT NULL DEFAULT 0,
     last_fulfilled DATE NULL,
     FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
         ON DELETE CASCADE ON UPDATE CASCADE,
@@ -223,7 +239,7 @@ CREATE TABLE ecopoint_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     customer_id INT UNSIGNED NOT NULL,
     rule_id INT UNSIGNED NULL,
-    source_type ENUM('order','challenge','manual') NOT NULL,
+    source_type ENUM('order','subscription','challenge','manual','redemption') NOT NULL,
     source_reference VARCHAR(80) NULL,
     points INT NOT NULL,
     created_by_admin INT UNSIGNED NULL,

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use DragonStone\Services\CartService;
+use DragonStone\Services\CurrencyService;
 
 /**
  * Render a PHP view with shared layout.
@@ -26,6 +27,8 @@ function render(string $view, array $data = []): void
         'baseUrl' => $_ENV['APP_URL'] ?? '/',
         'cartCount' => session_status() === PHP_SESSION_ACTIVE ? CartService::itemCount() : 0,
         'flash' => pull_flash(),
+        'activeCurrency' => CurrencyService::getActiveCurrency(),
+        'currencyOptions' => CurrencyService::available(),
     ];
 
     extract(array_merge($defaultData, $data));
@@ -55,6 +58,7 @@ function renderAdmin(string $view, array $data = []): void
         'flash' => pull_flash(),
         'adminName' => $_SESSION['admin_name'] ?? 'Team Member',
         'permissions' => $data['permissions'] ?? [],
+        'activeCurrency' => CurrencyService::getActiveCurrency(),
     ];
 
     extract(array_merge($defaultData, $data));
@@ -65,20 +69,37 @@ function renderAdmin(string $view, array $data = []): void
 }
 
 /**
- * Generate a formatted currency string.
+ * Generate a formatted currency string without conversion.
  */
 function format_currency(float $amount, string $currency = 'USD'): string
 {
-    if (!function_exists('numfmt_create')) {
-        return sprintf('%s %.2f', $currency, $amount);
-    }
+    return CurrencyService::format($amount, $currency);
+}
 
-    $fmt = numfmt_create('en_US', \NumberFormatter::CURRENCY);
-    if ($fmt === false) {
-        return sprintf('%s %.2f', $currency, $amount);
-    }
+/**
+ * Format an amount using the visitor's active currency.
+ */
+function format_price(float $amount, ?string $currency = null): string
+{
+    $currency = $currency ?? CurrencyService::getActiveCurrency();
+    $converted = CurrencyService::convertFromBase($amount, $currency);
 
-    return numfmt_format_currency($fmt, $amount, $currency);
+    return CurrencyService::format($converted, $currency);
+}
+
+function format_carbon(float $kilograms): string
+{
+    return number_format(max($kilograms, 0), 2) . ' kg CO₂e';
+}
+
+function active_currency(): string
+{
+    return CurrencyService::getActiveCurrency();
+}
+
+function currency_options(): array
+{
+    return CurrencyService::available();
 }
 
 /**

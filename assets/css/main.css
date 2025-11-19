@@ -23,3 +23,30 @@ footer a:hover {
     text-decoration: underline;
 }
 
+.currency-select select {
+    min-width: 180px;
+}
+
+.carbon-card {
+    border-left: 4px solid #6bbf59;
+}
+
+.carbon-card .stat-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4f5d52;
+}
+
+.carbon-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.reward-banner {
+    border: 1px dashed rgba(107, 191, 89, 0.6);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: rgba(107, 191, 89, 0.05);
+}
+

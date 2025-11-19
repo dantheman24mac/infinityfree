@@ -5,12 +5,12 @@ INSERT INTO categories (name, description) VALUES
     ('Kitchen & Dining', 'Reusable, compostable, and recycled kitchen essentials.'),
     ('Lifestyle & Wellness', 'Sustainable wellness products for daily rituals.');
 
-INSERT INTO products (category_id, sku, name, summary, description, price, subscription_eligible, sustainability_score)
+INSERT INTO products (category_id, sku, name, summary, description, price, subscription_eligible, sustainability_score, carbon_footprint_kg)
 VALUES
-    (1, 'DS-CLN-REFPOD', 'Refillable Cleaning Pods', 'Concentrated pods with refillable glass bottle.', 'Multi-surface cleaning pods that dissolve in water to reduce single-use plastic.', 19.99, 1, 92),
-    (1, 'DS-CLN-CHARBAG', 'Natural Air Purifying Bags', 'Charcoal-based air purifying bags for home spaces.', 'Reusable and compostable air purifying bags made from bamboo charcoal.', 24.00, 0, 88),
-    (2, 'DS-KIT-BAMSET', 'Bamboo Kitchen Set', 'Utensil set made from FSC-certified bamboo.', 'Utensils, cutting board, and spatulas crafted from sustainable bamboo.', 34.50, 0, 90),
-    (3, 'DS-LIF-ECOMAT', 'Eco Yoga Mat', 'Non-slip mat crafted from recycled rubber.', 'Durable, non-toxic yoga mat made entirely from post-consumer rubber waste.', 59.00, 1, 95);
+    (1, 'DS-CLN-REFPOD', 'Refillable Cleaning Pods', 'Concentrated pods with refillable glass bottle.', 'Multi-surface cleaning pods that dissolve in water to reduce single-use plastic.', 19.99, 1, 92, 1.20),
+    (1, 'DS-CLN-CHARBAG', 'Natural Air Purifying Bags', 'Charcoal-based air purifying bags for home spaces.', 'Reusable and compostable air purifying bags made from bamboo charcoal.', 24.00, 0, 88, 0.80),
+    (2, 'DS-KIT-BAMSET', 'Bamboo Kitchen Set', 'Utensil set made from FSC-certified bamboo.', 'Utensils, cutting board, and spatulas crafted from sustainable bamboo.', 34.50, 0, 90, 1.80),
+    (3, 'DS-LIF-ECOMAT', 'Eco Yoga Mat', 'Non-slip mat crafted from recycled rubber.', 'Durable, non-toxic yoga mat made entirely from post-consumer rubber waste.', 59.00, 1, 95, 2.40);
 
 INSERT INTO product_impact_metrics (product_id, metric_label, metric_value, baseline_comparison)
 VALUES
@@ -49,34 +49,34 @@ VALUES
     ('Mira', 'Lopez', 'mira@example.com', '$2y$10$dummyhash', 120, 'Cape Town', 'South Africa'),
     ('Jon', 'Snow', 'jon@example.com', '$2y$10$dummyhash', 80, 'Johannesburg', 'South Africa');
 
-INSERT INTO orders (customer_id, order_reference, total, status, eco_points_awarded, placed_at)
+INSERT INTO orders (customer_id, order_reference, subtotal, discount_total, total, total_converted, currency_code, currency_rate, eco_points_awarded, eco_points_redeemed, status, placed_at)
 VALUES
-    (1, 'ORD-1001', 79.49, 'completed', 90, CURRENT_TIMESTAMP - INTERVAL 5 DAY),
-    (2, 'ORD-1002', 59.00, 'paid', 60, CURRENT_TIMESTAMP - INTERVAL 2 DAY);
+    (1, 'ORD-1001', 79.49, 0.00, 79.49, 79.49, 'USD', 1.000000, 90, 0, 'completed', CURRENT_TIMESTAMP - INTERVAL 5 DAY),
+    (2, 'ORD-1002', 59.00, 0.00, 59.00, 59.00, 'USD', 1.000000, 60, 0, 'paid', CURRENT_TIMESTAMP - INTERVAL 2 DAY);
 
-INSERT INTO order_items (order_id, product_id, quantity, unit_price, eco_points)
+INSERT INTO order_items (order_id, product_id, quantity, unit_price, unit_price_display, currency_code, eco_points)
 VALUES
-    (1, 1, 2, 19.99, 40),
-    (1, 3, 1, 34.50, 30),
-    (2, 4, 1, 59.00, 60);
+    (1, 1, 2, 19.99, 19.99, 'USD', 40),
+    (1, 3, 1, 34.50, 34.50, 'USD', 30),
+    (2, 4, 1, 59.00, 59.00, 'USD', 60);
 
-INSERT INTO payments (order_id, method, amount, status, processed_at)
+INSERT INTO payments (order_id, method, amount, amount_converted, currency_code, status, processed_at)
 VALUES
-    (1, 'card', 79.49, 'captured', CURRENT_TIMESTAMP - INTERVAL 5 DAY),
-    (2, 'card', 59.00, 'authorized', CURRENT_TIMESTAMP - INTERVAL 2 DAY);
+    (1, 'card', 79.49, 79.49, 'USD', 'captured', CURRENT_TIMESTAMP - INTERVAL 5 DAY),
+    (2, 'card', 59.00, 59.00, 'USD', 'authorized', CURRENT_TIMESTAMP - INTERVAL 2 DAY);
 
 INSERT INTO shipments (order_id, provider, tracking_number, shipped_at, delivered_at)
 VALUES
     (1, 'EcoShip Logistics', 'EC123456789', CURRENT_TIMESTAMP - INTERVAL 4 DAY, CURRENT_TIMESTAMP - INTERVAL 1 DAY);
 
-INSERT INTO subscriptions (customer_id, name, interval_unit, next_renewal, status)
+INSERT INTO subscriptions (customer_id, name, interval_unit, next_renewal, last_processed, currency_code, status, auto_renew, reward_points)
 VALUES
-    (1, 'Home Essentials Bundle', 'monthly', CURRENT_DATE + INTERVAL 15 DAY, 'active');
+    (1, 'Home Essentials Bundle', 'monthly', CURRENT_DATE + INTERVAL 15 DAY, CURRENT_DATE - INTERVAL 15 DAY, 'USD', 'active', 1, 0);
 
-INSERT INTO subscriptions_items (subscription_id, product_id, quantity, last_fulfilled)
+INSERT INTO subscriptions_items (subscription_id, product_id, quantity, unit_price_snapshot, last_fulfilled)
 VALUES
-    (1, 1, 1, CURRENT_DATE - INTERVAL 15 DAY),
-    (1, 4, 1, CURRENT_DATE - INTERVAL 15 DAY);
+    (1, 1, 1, 19.99, CURRENT_DATE - INTERVAL 15 DAY),
+    (1, 4, 1, 59.00, CURRENT_DATE - INTERVAL 15 DAY);
 
 INSERT INTO challenges (title, description, start_date, end_date, eco_points_reward, status)
 VALUES
@@ -102,6 +102,7 @@ INSERT INTO ecopoint_transactions (customer_id, rule_id, source_type, source_ref
 VALUES
     (1, 1, 'order', 'ORD-1001', 90),
     (1, 2, 'challenge', 'POST-1', 80),
+    (1, NULL, 'redemption', 'ORD-1000', -30),
     (2, 1, 'order', 'ORD-1002', 60);
 
 INSERT INTO admin_users (first_name, last_name, email, password_hash)

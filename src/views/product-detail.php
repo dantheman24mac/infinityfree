@@ -20,8 +20,11 @@
                     <h2 class="h3"><?= htmlspecialchars($product['name']) ?></h2>
                     <p class="lead text-muted"><?= htmlspecialchars($product['summary']) ?></p>
                     <p><?= nl2br(htmlspecialchars($product['description'] ?? '')) ?></p>
-                    <div class="d-flex align-items-center gap-3 mt-4">
-                        <span class="display-6 fw-semibold"><?= htmlspecialchars(format_currency((float)$product['price'], 'USD')) ?></span>
+                    <div class="d-flex flex-column flex-md-row align-items-md-center gap-3 mt-4">
+                        <div>
+                            <span class="display-6 fw-semibold"><?= htmlspecialchars(format_price((float)$product['price'])) ?></span>
+                            <small class="text-muted d-block">Base: <?= htmlspecialchars(format_currency((float)$product['price'])) ?></small>
+                        </div>
                         <?php if ((int)$product['subscription_eligible'] === 1): ?>
                             <span class="badge bg-success text-white">Subscription eligible</span>
                         <?php endif; ?>
@@ -55,6 +58,27 @@
             </div>
         </div>
         <div class="col-md-5">
+            <?php if (!empty($product['carbon_footprint_kg'])): ?>
+                <div class="card shadow-sm mb-4 carbon-card" data-carbon-calculator data-carbon-per-unit="<?= htmlspecialchars((string)$product['carbon_footprint_kg']) ?>">
+                    <div class="card-body">
+                        <h3 class="h5">Carbon footprint calculator</h3>
+                        <p class="text-muted small mb-3">Per-unit footprint helps you compare with other essentials.</p>
+                        <div class="mb-3">
+                            <label class="form-label" for="carbon_quantity">Quantity</label>
+                            <input type="number" id="carbon_quantity" class="form-control" min="1" value="1" data-carbon-qty>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <div>
+                                <div class="stat-label">Total footprint</div>
+                                <div class="stat-value"><span data-carbon-total><?= htmlspecialchars((string)$product['carbon_footprint_kg']) ?></span> kg CO₂e</div>
+                            </div>
+                            <div class="text-muted small">
+                                ≈ <span data-carbon-trees>0</span> tree-days • <span data-carbon-commute>0</span> km commute
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h3 class="h5">Sustainability metrics</h3>

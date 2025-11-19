@@ -21,6 +21,7 @@ class ProductRepository
                     p.summary,
                     p.price,
                     p.sustainability_score,
+                    p.carbon_footprint_kg,
                     c.name AS category_name
              FROM products p
              INNER JOIN categories c ON p.category_id = c.id
@@ -44,6 +45,7 @@ class ProductRepository
                          p.name,
                          p.summary,
                          p.price,
+                         p.carbon_footprint_kg,
                          c.name AS category_name
                   FROM products p
                   INNER JOIN categories c ON p.category_id = c.id';
@@ -202,7 +204,7 @@ class ProductRepository
     public static function subscriptionEligible(PDO $pdo, int $limit = 10): array
     {
         $stmt = $pdo->prepare(
-            'SELECT p.id, p.name, p.price
+            'SELECT p.id, p.name, p.price, p.carbon_footprint_kg
              FROM products p
              WHERE p.subscription_eligible = 1
              ORDER BY p.name

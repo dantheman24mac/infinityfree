@@ -1,10 +1,99 @@
 <?php
 /** @var array<int,array<string,mixed>> $posts */
 /** @var array<int,array<int,array<string,mixed>>> $comments */
+/** @var array<int,array<string,mixed>> $challenges */
 ?>
 <div class="mb-4">
     <h2 class="h3 mb-1">Community Moderation</h2>
     <p class="text-muted">Approve sustainable living posts, review challenge submissions, and monitor feedback.</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h3 class="h6 mb-0">Create a new challenge</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" action="community.php" class="vstack gap-3">
+                    <input type="hidden" name="form" value="challenge_create">
+                    <div>
+                        <label class="form-label" for="challenge_title">Title</label>
+                        <input type="text" class="form-control" id="challenge_title" name="challenge_title" required>
+                    </div>
+                    <div>
+                        <label class="form-label" for="challenge_description">Description</label>
+                        <textarea class="form-control" id="challenge_description" name="challenge_description" rows="3" required></textarea>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="start_date">Start date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="end_date">End date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="eco_points_reward">EcoPoints reward</label>
+                            <input type="number" min="10" step="10" class="form-control" id="eco_points_reward" name="eco_points_reward" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="challenge_status">Status</label>
+                            <select class="form-select" id="challenge_status" name="challenge_status">
+                                <option value="scheduled">Scheduled</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button class="btn btn-success" type="submit">Publish challenge</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h3 class="h6 mb-0">Challenge timeline</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <?php if (empty($challenges)): ?>
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No challenges yet.</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($challenges as $challenge): ?>
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold"><?= htmlspecialchars($challenge['title']) ?></div>
+                                        <small class="text-muted">Reward: <?= (int)$challenge['eco_points_reward'] ?> pts</small>
+                                    </td>
+                                    <td><?= htmlspecialchars($challenge['start_date']) ?> – <?= htmlspecialchars($challenge['end_date']) ?></td>
+                                    <td><span class="badge bg-secondary bg-opacity-10 text-uppercase text-muted"><?= htmlspecialchars($challenge['status']) ?></span></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="accordion" id="communityModeration">

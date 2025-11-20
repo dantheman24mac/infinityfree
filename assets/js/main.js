@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-  document
-    .querySelectorAll('[data-bs-toggle="tooltip"]')
-    .forEach((tooltipTriggerEl) => {
-      new bootstrap.Tooltip(tooltipTriggerEl);
+  if (window.bootstrap && typeof bootstrap.Tooltip === 'function') {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((trigger) => {
+      new bootstrap.Tooltip(trigger);
     });
+  }
 
   const currencySelect = document.querySelector('[data-currency-switcher]');
   if (currencySelect) {
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-carbon-calculator]').forEach((calculator) => {
     const perUnit = parseFloat(calculator.dataset.carbonPerUnit || '0');
-    if (!perUnit) {
+    if (!perUnit || Number.isNaN(perUnit)) {
       return;
     }
 
@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const totalOutput = calculator.querySelector('[data-carbon-total]');
     const treesOutput = calculator.querySelector('[data-carbon-trees]');
     const commuteOutput = calculator.querySelector('[data-carbon-commute]');
+
+    if (!quantityInput || !totalOutput || !treesOutput || !commuteOutput) {
+      return;
+    }
 
     const updateTotals = () => {
       const qty = Math.max(parseInt(quantityInput.value, 10) || 1, 1);

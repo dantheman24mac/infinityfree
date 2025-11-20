@@ -8,6 +8,8 @@ use DragonStone\Services\CartService;
 use DragonStone\Repositories\CustomerRepository;
 use DragonStone\Repositories\OrderRepository;
 use DragonStone\Repositories\SubscriptionRepository;
+use DragonStone\Repositories\ChallengeRepository;
+use DragonStone\Repositories\CommunityRepository;
 use DragonStone\Services\CurrencyService;
 use DragonStone\Services\RewardService;
 use DragonStone\Services\SubscriptionService;
@@ -108,6 +110,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action !== null) {
                 $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Unable to create subscription: ' . $exception->getMessage()];
             }
             header('Location: ' . ($_ENV['APP_URL'] ?? '/') . '?page=subscriptions');
+            exit;
+
+        case 'community_submit':
+            $requiredFields = ['first_name', 'last_name', 'email', 'entry_title', 'entry_body'];
+            foreach ($requiredFields as $field) {
+                if (empty($_POST[$field])) {
+                    $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Please fill in all required fields before submitting.'];
+                    header('Location: ' . ($_ENV['APP_URL'] ?? '/') . '?page=community');
+                    exit;
+                }
+            }
+
+            $challengeId = isset($_POST['challenge_id']) ? (int)$_POST['challenge_id'] : null;
+            if ($challengeId !== null && $challengeId > 0 && !ChallengeRepository::exists($pdo, $challengeId)) {
+                $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Please select a valid challenge.'];
+                header('Location: ' . ($_ENV['APP_URL'] ?? '/') . '?page=community');
+                exit;
+            }
+
+            $customerData = [
+                'first_name' => trim((string)$_POST['first_name']),
+                'last_name' => trim((string)$_POST['last_name']),
+                'email' => strtolower(trim((string)$_POST['email'])),
+                'phone' => trim((string)($_POST['phone'] ?? '')),
+                'city' => trim((string)($_POST['city'] ?? '')),
+                'country' => trim((string)($_POST['country'] ?? '')),
+            ];
+            $customer = CustomerRepository::findOrCreate($pdo, $customerData);
+            $_SESSION['customer_id'] = (int)$customer['id'];
+
+            $postData = [
+                'customer_id' => (int)$customer['id'],
+                'challenge_id' => $challengeId && $challengeId > 0 ? $challengeId : null,
+                'title' => trim((string)$_POST['entry_title']),
+                'body' => trim((string)$_POST['entry_body']),
+            ];
+
+            CommunityRepository::createPost($pdo, $postData);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Entry received! We will review it shortly.'];
+            header('Location: ' . ($_ENV['APP_URL'] ?? '/') . '?page=community');
             exit;
 
         case 'checkout_submit':
@@ -283,10 +325,32 @@ switch ($page) {
         break;
 
     case 'community':
+        $challenges = ChallengeRepository::publicChallenges($pdo);
+        $stories = CommunityRepository::approvedPosts($pdo, 6);
+        $selectedChallenge = isset($_GET['challenge']) ? (int)$_GET['challenge'] : null;
+
+        render('community', [
+            'title' => 'Community Challenges',
+            'challenges' => $challenges,
+            'stories' => $stories,
+            'selectedChallenge' => $selectedChallenge,
+        ]);
+        break;
+
     case 'impact':
-        render('placeholders/coming-soon', [
-            'title' => ucfirst($page) . ' – Coming Soon',
-            'section' => ucfirst($page),
+        $impactHighlights = ProductRepository::impactHighlights($pdo, 8);
+        $activeChallenges = (int)($pdo->query("SELECT COUNT(*) FROM challenges WHERE status = 'active'")->fetchColumn() ?: 0);
+        $approvedStories = (int)($pdo->query("SELECT COUNT(*) FROM community_posts WHERE status = 'approved'")->fetchColumn() ?: 0);
+        $ecoPointTotal = (int)($pdo->query("SELECT COALESCE(SUM(points),0) FROM ecopoint_transactions WHERE points > 0")->fetchColumn() ?: 0);
+        $avgProductFootprint = (float)($pdo->query('SELECT COALESCE(AVG(carbon_footprint_kg),0) FROM products WHERE carbon_footprint_kg IS NOT NULL')->fetchColumn() ?: 0);
+
+        render('impact', [
+            'title' => 'Impact Dashboard',
+            'impactHighlights' => $impactHighlights,
+            'activeChallenges' => $activeChallenges,
+            'approvedStories' => $approvedStories,
+            'ecoPointTotal' => $ecoPointTotal,
+            'avgProductFootprint' => $avgProductFootprint,
         ]);
         break;
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use DragonStone\Auth\AdminAuth;
 use DragonStone\Repositories\AdminRepository;
+use DragonStone\Repositories\ChallengeRepository;
 
 $basePath = realpath(__DIR__ . '/..');
 if ($basePath === false || !file_exists($basePath . '/vendor/autoload.php')) {
@@ -38,18 +39,44 @@ if (!in_array('community.moderate', $permissions, true)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $postId = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
-    $status = $_POST['status'] ?? '';
-    $allowed = ['pending', 'approved', 'flagged'];
-    if ($postId > 0 && in_array($status, $allowed, true)) {
-        $stmt = $pdo->prepare('UPDATE community_posts SET status = :status WHERE id = :id');
-        $stmt->execute([
-            ':status' => $status,
-            ':id' => $postId,
-        ]);
-        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Post status updated.'];
+    if (isset($_POST['form']) && $_POST['form'] === 'challenge_create') {
+        $title = trim((string)($_POST['challenge_title'] ?? ''));
+        $description = trim((string)($_POST['challenge_description'] ?? ''));
+        $startDate = $_POST['start_date'] ?? '';
+        $endDate = $_POST['end_date'] ?? '';
+        $reward = (int)($_POST['eco_points_reward'] ?? 0);
+        $status = $_POST['challenge_status'] ?? 'scheduled';
+        $statusAllowed = ['scheduled', 'active', 'completed'];
+
+        if ($title === '' || $description === '' || $startDate === '' || $endDate === '' || $reward <= 0 || !in_array($status, $statusAllowed, true)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Please complete all challenge fields with valid values.'];
+        } elseif (strtotime($startDate) === false || strtotime($endDate) === false || strtotime($startDate) > strtotime($endDate)) {
+            $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Please provide a valid date range for the challenge.'];
+        } else {
+            ChallengeRepository::create($pdo, [
+                'title' => $title,
+                'description' => $description,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'eco_points_reward' => $reward,
+                'status' => $status,
+            ]);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Challenge created successfully.'];
+        }
     } else {
-        $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Invalid update request.'];
+        $postId = isset($_POST['post_id']) ? (int)$_POST['post_id'] : 0;
+        $status = $_POST['status'] ?? '';
+        $allowed = ['pending', 'approved', 'flagged'];
+        if ($postId > 0 && in_array($status, $allowed, true)) {
+            $stmt = $pdo->prepare('UPDATE community_posts SET status = :status WHERE id = :id');
+            $stmt->execute([
+                ':status' => $status,
+                ':id' => $postId,
+            ]);
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Post status updated.'];
+        } else {
+            $_SESSION['flash'] = ['type' => 'danger', 'message' => 'Invalid update request.'];
+        }
     }
 
     header('Location: /assignment-ecommerce/prototype/public/admin/community.php');
@@ -75,9 +102,12 @@ foreach ($commentsStmt->fetchAll() ?: [] as $comment) {
     $comments[(int)$comment['post_id']][] = $comment;
 }
 
+$challengeList = ChallengeRepository::all($pdo);
+
 renderAdmin('admin/community', [
     'title' => 'Community Moderation',
     'posts' => $posts,
     'comments' => $comments,
+    'challenges' => $challengeList,
     'permissions' => $permissions,
 ]);
